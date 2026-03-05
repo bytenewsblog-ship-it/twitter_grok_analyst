@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+<meta charset="UTF-8">
+<title>News Analysis Dashboard</title>
+
+<link rel="stylesheet"
+href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
+
+<link rel="stylesheet"
+href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.dataTables.min.css">
+
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+
+<style>
+
+body{
+font-family:Segoe UI;
+background:#f5f7fb;
+padding:30px;
+}
+
+h1{
+margin-bottom:20px;
+}
+
+.card{
+background:white;
+padding:20px;
+border-radius:10px;
+box-shadow:0 4px 12px rgba(0,0,0,0.08);
+}
+
+.filters{
+margin-bottom:20px;
+display:flex;
+gap:10px;
+flex-wrap:wrap;
+}
+
+select,input{
+padding:8px;
+border-radius:5px;
+border:1px solid #ddd;
+}
+
+table{
+font-size:13px;
+}
+
+.level-positive{
+color:#0aa84f;
+font-weight:bold;
+}
+
+.level-negative{
+color:#e53935;
+font-weight:bold;
+}
+
+.level-moderate{
+color:#ff9800;
+font-weight:bold;
+}
+
+.summary{
+max-width:400px;
+white-space:normal;
+}
+
+</style>
+</head>
+
+<body>
+
+<h1>📊 News Analysis Dashboard</h1>
+
+<div class="card">
+
+<div class="filters">
+
+<input type="date" id="dateFilter">
+
+<select id="levelFilter">
+<option value="">All Levels</option>
+<option value="Highly positive">Highly positive</option>
+<option value="Moderate">Moderate</option>
+<option value="Highly negative">Highly negative</option>
+</select>
+
+<select id="sortTime">
+<option value="desc">Latest First</option>
+<option value="asc">Oldest First</option>
+</select>
+
+<button onclick="applyFilters()">Apply Filter</button>
+
+</div>
+
+<table id="newsTable" class="display">
+
+<thead>
+
+<tr>
+
+<th>Time</th>
+
+<th>Level</th>
+
+<th>Score</th>
+
+<th>Summary</th>
+
+<th>Sector Impact</th>
+
+<th>Stocks</th>
+
+<th>Link</th>
+
+</tr>
+
+</thead>
+
+<tbody></tbody>
+
+</table>
+
+</div>
+
+<script>
+
+let table;
+let rawData=[];
+
+fetch("analysis.json")
+.then(res=>res.json())
+.then(data=>{
+
+rawData=data;
+
+populateTable(data);
+
+});
+
+
+function populateTable(data){
+
+let rows="";
+
+data.forEach(item=>{
+
+let levelClass="level-moderate";
+
+if(item.Level.toLowerCase().includes("positive"))
+levelClass="level-positive";
+
+if(item.Level.toLowerCase().includes("negative"))
+levelClass="level-negative";
+
+rows+=`
+
+<tr>
+
+<td>${item.processedAt}</td>
+
+<td class="${levelClass}">
+${item.Level}
+</td>
+
+<td>${item.Score}</td>
+
+<td class="summary">${item.Post_Summary}</td>
+
+<td>${item.Sector_Impact}</td>
+
+<td>${item.Stocks_Highly_Affected}</td>
+
+<td>
+<a href="${item.original_link}" target="_blank">
+View
+</a>
+</td>
+
+</tr>
+
+`;
+
+});
+
+$("#newsTable tbody").html(rows);
+
+table = $('#newsTable').DataTable({
+order:[[0,'desc']]
+});
+
+}
+
+
+function applyFilters(){
+
+let date=$("#dateFilter").val();
+let level=$("#levelFilter").val();
+let sort=$("#sortTime").val();
+
+let filtered=rawData.filter(item=>{
+
+let pass=true;
+
+if(date){
+
+let itemDate=item.processedAt.split(" ")[0];
+
+if(itemDate!==date)
+pass=false;
+
+}
+
+if(level){
+
+if(item.Level!==level)
+pass=false;
+
+}
+
+return pass;
+
+});
+
+table.destroy();
+
+populateTable(filtered);
+
+if(sort==="asc")
+table.order([0,'asc']).draw();
+else
+table.order([0,'desc']).draw();
+
+}
+
+</script>
+
+</body>
+</html>
